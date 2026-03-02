@@ -73,8 +73,8 @@ class AuthPage {
   _bindEvents() {
     document.getElementById('login-password')
       .addEventListener('keydown', e => { if (e.key === 'Enter') this.login(); });
-    document.getElementById('reg-password')
-      .addEventListener('keydown', e => { if (e.key === 'Enter') this.register(); });
+    document.getElementById('login-username')
+      .addEventListener('keydown', e => { if (e.key === 'Enter') this.login(); });
   }
 }
 
