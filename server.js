@@ -11,8 +11,8 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet({ contentSecurityPolicy: false }));
 
 const loginLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  max: 5,
+  windowMs: 15 * 60 * 1000,
+  max: 20,
   message: { error: 'Demasiados intentos. Espera 15 minutos.' }
 });
 app.use('/api/auth/login', loginLimiter);
@@ -29,6 +29,9 @@ const ingresosRoutes  = require('./src/routes/ingresos.routes');
 const prestamosRoutes = require('./src/routes/prestamos.routes');
 const cajaBaseRoutes  = require('./src/routes/caja_base.routes');
 
+// Health check — para UptimeRobot y diagnóstico
+app.get('/ping', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
+
 app.use('/api/auth',      authRoutes);
 app.use('/api/products',  productRoutes);
 app.use('/api/sales',     salesRoutes);
@@ -37,7 +40,11 @@ app.use('/api/ingresos',  ingresosRoutes);
 app.use('/api/prestamos', prestamosRoutes);
 app.use('/api/caja-base',  cajaBaseRoutes);
 
+// Solo redirigir rutas que no sean /api
 app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'Ruta no encontrada' });
+  }
   res.sendFile(path.join(__dirname, 'public', 'pages', 'index.html'));
 });
 
