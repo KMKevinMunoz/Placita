@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Placita — Usuarios</title>
+  <link rel="stylesheet" href="/css/global.css"/>
+  <link rel="stylesheet" href="/css/components.css"/>
+  <style>
+    .user-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); padding:18px 20px; display:flex; align-items:center; gap:16px; }
+    .user-avatar-big { width:48px; height:48px; border-radius:50%; background:var(--green-bg); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:var(--green-dim); flex-shrink:0; border:2px solid var(--border); }
+    .user-avatar-big.admin { background:#FEF3C7; color:#92400E; border-color:#F59E0B; }
+    .user-info-col { flex:1; }
+    .user-info-col h4 { font-size:15px; font-weight:700; margin:0 0 3px; }
+    .user-role-badge { font-size:11px; font-weight:700; padding:2px 10px; border-radius:99px; display:inline-block; }
+    .badge-admin  { background:#FEF3C7; color:#92400E; }
+    .badge-cajero { background:var(--green-bg); color:var(--green-dim); }
+    .users-list { display:flex; flex-direction:column; gap:10px; }
+    .create-form { background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:24px; }
+    .create-form h3 { font-family:var(--serif); font-size:18px; font-weight:700; margin:0 0 16px; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media(max-width:600px){ .form-row { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <button id="sidebar-close" class="sidebar-close" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('visible');document.body.style.overflow=''">✕</button>
+    <div class="sidebar-logo"><h2>🌿Placita</h2><h1>Frutos de Mi Campo</h1><h2>🐮🍉🌿🧺</h2></div>
+    <nav>
+      <div class="nav-section">Ventas</div>
+      <a class="nav-item" href="/pages/venta.html"><span class="icon">🛒</span> Registrar venta</a>
+      <a class="nav-item" href="/pages/recibos.html"><span class="icon">🧾</span> Recibos</a>
+      <div class="nav-section">Gestión</div>
+      <a class="nav-item" href="/pages/productos.html"><span class="icon">📦</span> Productos</a>
+      <a class="nav-item" href="/pages/ingresos.html"><span class="icon">📥</span> Ingresos</a>
+      <a class="nav-item" href="/pages/prestamos.html"><span class="icon">🤝</span> Préstamos</a>
+      <a class="nav-item" href="/pages/lista.html"><span class="icon">📝</span> Lista de pedidos</a>
+      <a class="nav-item" href="/pages/pesas.html"><span class="icon">⚖️</span> Pesa USB</a>
+      <div class="nav-section">Reportes</div>
+      <a class="nav-item" href="/pages/contabilidad.html"><span class="icon">📊</span> Contabilidad</a>
+      <div class="nav-section">Admin</div>
+      <a class="nav-item active" href="/pages/usuarios.html"><span class="icon">👥</span> Usuarios</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info"><div class="user-avatar" id="user-avatar">?</div><div class="user-name" id="user-name">...</div></div>
+      <button class="btn-logout" onclick="api.logout()">Cerrar sesión</button>
+    </div>
+  </div>
+  <div id="sidebar-overlay"></div>
+
+  <div id="main-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <button id="menu-toggle" aria-label="Menú">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div><h2>Usuarios</h2><p>Solo los admins pueden crear y eliminar usuarios</p></div>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- Crear usuario -->
+      <div class="create-form">
+        <h3>➕ Crear nuevo usuario</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre de usuario</label>
+            <input type="text" id="new-username" placeholder="Ej: jose, claudia..." maxlength="30"/>
+          </div>
+          <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="new-password" placeholder="Mínimo 6 caracteres"/>
+          </div>
+        </div>
+        <div class="form-group" style="max-width:220px">
+          <label>Rol</label>
+          <select id="new-role">
+            <option value="cajero">Cajero (acceso normal)</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div id="create-error" class="msg-error"></div>
+        <div id="create-success" class="msg-success"></div>
+        <button class="btn btn-primary" onclick="usuariosPage.crearUsuario()">✓ Crear usuario</button>
+      </div>
+
+      <!-- Lista de usuarios -->
+      <div class="section-title" style="margin-bottom:12px">👥 Usuarios actuales</div>
+      <div class="users-list" id="users-list">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmar eliminar -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal" style="max-width:380px">
+    <h3 style="margin-bottom:12px">🗑️ Eliminar usuario</h3>
+    <p>¿Seguro que quieres eliminar a <strong id="delete-username-label"></strong>? Esta acción no se puede deshacer.</p>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn btn-secondary" onclick="document.getElementById('delete-modal').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirm-delete" onclick="usuariosPage.confirmarEliminar()">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/js/ApiClient.js"></script>
+<script src="/js/lock.js"></script>
+<script src="/js/ui.js"></script>
+<script>
+class UsuariosPage {
+  constructor() {
+    if (!api.requireAuth()) return;
+    if (!api.isAdmin()) {
+      document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center">
+        <div><div style="font-size:60px">🔒</div><h2>Acceso denegado</h2><p>Solo administradores.</p>
+        <a href="/pages/venta.html" class="btn btn-primary">← Volver</a></div></div>`;
+      return;
+    }
+    this._deleteTarget = null;
+    const user = api.getUser();
+    if (user) {
+      document.getElementById('user-avatar').textContent = user.username[0].toUpperCase();
+      document.getElementById('user-name').textContent   = user.username;
+    }
+    this.cargarUsuarios();
+    this._bindSidebar();
+  }
+
+  _bindSidebar() {
+    const toggle  = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const close   = document.getElementById('sidebar-close');
+    if (toggle)  toggle.addEventListener('click',  () => { sidebar.classList.add('open'); overlay.classList.add('visible'); document.body.style.overflow='hidden'; });
+    if (overlay) overlay.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('visible'); document.body.style.overflow=''; });
+    if (close)   close.addEventListener('click',   () => { sidebar.classList.remove('open'); overlay.classList.remove('visible'); document.body.style.overflow=''; });
+  }
+
+  async cargarUsuarios() {
+    const list = document.getElementById('users-list');
+    try {
+      const users = await api.get('/auth/users');
+      const me = api.getUser();
+      if (!users.length) { list.innerHTML = '<p style="color:var(--text-muted)">No hay usuarios aún.</p>'; return; }
+      list.innerHTML = users.map(u => {
+        const isMe    = u.id === me?.id;
+        const isAdmin = u.role === 'admin';
+        return `<div class="user-card">
+          <div class="user-avatar-big ${isAdmin ? 'admin' : ''}">${u.username[0].toUpperCase()}</div>
+          <div class="user-info-col">
+            <h4>${u.username} ${isMe ? '<span style="font-size:11px;color:var(--text-muted)">(tú)</span>' : ''}</h4>
+            <span class="user-role-badge ${isAdmin ? 'badge-admin' : 'badge-cajero'}">${isAdmin ? '👑 Admin' : '🛒 Cajero'}</span>
+          </div>
+          ${!isMe ? `<button class="btn btn-danger btn-sm" onclick="usuariosPage.pedirEliminar('${u.id}','${u.username}')">🗑️</button>` : ''}
+        </div>`;
+      }).join('');
+    } catch(e) {
+      list.innerHTML = `<p style="color:var(--red)">Error: ${e.message}</p>`;
+    }
+  }
+
+  async crearUsuario() {
+    const username = document.getElementById('new-username').value.trim();
+    const password = document.getElementById('new-password').value;
+    const role     = document.getElementById('new-role').value;
+    const errEl    = document.getElementById('create-error');
+    const okEl     = document.getElementById('create-success');
+    errEl.textContent = ''; okEl.textContent = '';
+
+    if (!username) return errEl.textContent = 'Escribe un nombre de usuario.';
+    if (password.length < 6) return errEl.textContent = 'Mínimo 6 caracteres en la contraseña.';
+
+    try {
+      await api.register(username, password, role);
+      okEl.textContent = `✅ Usuario "${username}" creado correctamente.`;
+      document.getElementById('new-username').value = '';
+      document.getElementById('new-password').value = '';
+      document.getElementById('new-role').value = 'cajero';
+      this.cargarUsuarios();
+    } catch(e) {
+      errEl.textContent = e.message;
+    }
+  }
+
+  pedirEliminar(id, username) {
+    this._deleteTarget = id;
+    document.getElementById('delete-username-label').textContent = username;
+    document.getElementById('delete-modal').classList.add('open');
+  }
+
+  async confirmarEliminar() {
+    if (!this._deleteTarget) return;
+    try {
+      await api.delete('/auth/users/' + this._deleteTarget);
+      document.getElementById('delete-modal').classList.remove('open');
+      showToast('Usuario eliminado');
+      this.cargarUsuarios();
+    } catch(e) {
+      showToast('Error: ' + e.message, 'error');
+    }
+  }
+}
+
+const usuariosPage = new UsuariosPage();
+
+document.getElementById('delete-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
+</script>
+</body>
+</html>

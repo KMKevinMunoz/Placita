@@ -72,6 +72,11 @@ class AuthService {
     return data;
   }
 
+  async deleteUser(id) {
+    const { error } = await supabase.from('users').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+  }
+
   verifyToken(token) {
     try {
       return jwt.verify(token, JWT_SECRET);
