@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Placita — Contabilidad</title>
+  <link rel="stylesheet" href="/css/global.css"/>
+  <link rel="stylesheet" href="/css/components.css"/>
+  <style>
+
+    /* ── Banner base ─────────────────────────────────────────── */
+    .base-banner {
+      border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .base-banner.pending { background: #FEF3C7; border: 1.5px solid #FCD34D; }
+    .base-banner.done    { background: #D1FAE5; border: 1.5px solid #6EE7B7; }
+    .base-banner .bb-info h4 { margin: 0; font-size: 15px; font-weight: 700; }
+    .base-banner .bb-info p  { margin: 0; font-size: 12px; opacity: .75; margin-top: 2px; }
+    .base-banner.pending .bb-info h4 { color: #92400E; }
+    .base-banner.done    .bb-info h4 { color: #065F46; }
+    .base-banner .bb-amounts { display: flex; gap: 16px; flex-wrap: wrap; margin-left: auto; }
+    .base-amount-item { font-size: 13px; font-weight: 600; }
+    .base-amount-item span { font-weight: 800; }
+
+    /* ── Cards por persona ───────────────────────────────────── */
+    .personas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .persona-card { border-radius: var(--radius); border: 2px solid var(--border); overflow: hidden; }
+    .persona-card-header {
+      padding: 14px 18px 12px; display: flex; align-items: center; gap: 12px;
+    }
+    .persona-card-header .avatar { font-size: 28px; }
+    .persona-card-header .info h3 { margin: 0; font-size: 18px; font-weight: 800; }
+    .persona-card-header .info p  { margin: 0; font-size: 12px; opacity: .75; }
+    .persona-card.jose    .persona-card-header { background: #E0F2FE; border-bottom: 2px solid #BAE6FD; }
+    .persona-card.jose    { border-color: #0EA5E9; }
+    .persona-card.claudia .persona-card-header { background: #FDF4FF; border-bottom: 2px solid #E9D5FF; }
+    .persona-card.claudia { border-color: #A855F7; }
+    .persona-card-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+    .pc-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+    .pc-row .lbl { color: var(--text-muted); font-weight: 500; }
+    .pc-row .val { font-weight: 700; }
+    .pc-divider { height: 1px; background: var(--border); margin: 2px 0; }
+    .pc-neta {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--card); border-radius: var(--radius-sm); padding: 10px 14px; margin-top: 4px;
+    }
+    .pc-neta .lbl { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); }
+    .pc-neta .val { font-size: 22px; font-weight: 900; }
+
+    /* ── Stats resumen ───────────────────────────────────────── */
+    .stats-resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+
+    /* ── Historial ───────────────────────────────────────────── */
+    .sale-row { cursor: pointer; transition: background .15s; }
+    .sale-row:hover td { background: var(--card); }
+    .sale-detail { padding: 12px 20px 16px; background: var(--card); border-bottom: 1px solid var(--border); }
+    .detail-items { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+    .detail-item { display: flex; justify-content: space-between; font-size: 13px; }
+    .detail-item span:first-child { color: var(--text-muted); }
+    .detail-item span:last-child  { color: var(--text); font-weight: 600; }
+    .dept-section { margin-bottom: 32px; }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 900px) { .stats-resumen { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 720px) { .personas-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) {
+      .stats-resumen { grid-template-columns: 1fr; }
+      th:nth-child(2), td:nth-child(2) { display: none; }
+      }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <button id="sidebar-close" class="sidebar-close"
+      onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('visible');document.body.style.overflow=''">✕</button>
+    <div class="sidebar-logo"><h2>🌿Placita</h2><h1>Frutos de Mi Campo</h1><h2>🐮🍉🌿🧺</h2></div>
+    <nav>
+      <div class="nav-section">Ventas</div>
+      <a class="nav-item" href="/pages/venta.html"><span class="icon">🛒</span> Registrar venta</a>
+      <a class="nav-item" href="/pages/recibos.html"><span class="icon">🧾</span> Recibos</a>
+      <div class="nav-section">Gestión</div>
+      <a class="nav-item" href="/pages/productos.html"><span class="icon">📦</span> Productos</a>
+      <a class="nav-item" href="/pages/ingresos.html"><span class="icon">📥</span> Ingresos</a>
+      <a class="nav-item" href="/pages/prestamos.html"><span class="icon">🤝</span> Préstamos</a>
+      <a class="nav-item" href="/pages/lista.html"><span class="icon">📝</span> Lista de pedidos</a>
+      <a class="nav-item" href="/pages/pesas.html"><span class="icon">⚖️</span> Pesa USB</a>
+      <div class="nav-section">Reportes</div>
+      <a class="nav-item active" href="/pages/contabilidad.html"><span class="icon">📊</span> Contabilidad</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info"><div class="user-avatar" id="user-avatar">?</div><div class="user-name" id="user-name">...</div></div>
+      <button class="btn-logout" onclick="api.logout()">Cerrar sesión</button>
+    </div>
+  </div>
+  <div id="sidebar-overlay"></div>
+
+  <!-- MAIN -->
+  <div id="main-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <button id="menu-toggle" aria-label="Menú">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div><h2>📊 Contabilidad</h2><p>Ventas e ingresos · semana dom–sáb</p></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn btn-primary btn-sm" onclick="CajaBase._inject();CajaBase.show()">📦 Base de caja</button>
+        <button class="btn btn-secondary btn-sm" onclick="contabilidadPage.reload()">↺</button>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <div id="base-banner"></div>
+
+      <div class="section-title" style="margin-bottom:12px">👥 Por área — hoy</div>
+      <div class="personas-grid" id="personas-grid">
+        <div class="loading-center" style="grid-column:1/-1"><div class="spinner"></div></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-title" style="margin-bottom:12px">📈 Resumen general</div>
+      <div class="stats-resumen" id="stats-resumen">
+        <div class="loading-center" style="grid-column:1/-1"><div class="spinner"></div></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-title" style="margin-bottom:12px">💰 Cuentas del día — Nequi y efectivo</div>
+      <div id="cuentas-dia">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-title" style="margin-bottom:12px">📋 Historial de ventas</div>
+      <div class="date-range-bar" id="sales-drb">
+        <span class="drb-label">📅 Período</span>
+        <div class="drb-dates" style="display:flex;align-items:center;gap:8px">
+          <input type="date" class="drb-from" id="filter-from"/>
+          <span class="drb-sep">→</span>
+          <input type="date" class="drb-to" id="filter-to"/>
+        </div>
+        <div class="drb-btns">
+          <button class="drb active" data-range="today">Hoy</button>
+          <button class="drb" data-range="week">Esta semana</button>
+          <button class="drb" data-range="month">Este mes</button>
+        </div>
+      </div>
+
+      <!-- Verduras -->
+      <div class="dept-section">
+        <div class="dept-header verduras" style="margin-bottom:12px">
+          <span style="font-size:22px">🥦</span>
+          <div><h3>Verduras y Granos</h3><span style="font-size:12px;color:var(--text-muted)">👨 José</span></div>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Hora</th><th>Productos</th><th>Total</th><th></th></tr></thead>
+          <tbody id="sales-tbody-verduras"></tbody></table>
+        </div>
+      </div>
+
+      <!-- Carnicería -->
+      <div class="dept-section">
+        <div class="dept-header carniceria" style="margin-bottom:12px">
+          <span style="font-size:22px">🥩</span>
+          <div><h3>Carnicería</h3><span style="font-size:12px;color:var(--text-muted)">👩 Claudia</span></div>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Hora</th><th>Productos</th><th>Total</th><th></th></tr></thead>
+          <tbody id="sales-tbody-carniceria"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/js/ApiClient.js"></script>
+<script src="/js/lock.js"></script>
+<script src="/js/caja_base.js"></script>
+<script>document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>CajaBase.check(),700));</script>
+<script src="/js/ui.js"></script>
+<script src="/js/contabilidad.js"></script>
+</body>
+</html>

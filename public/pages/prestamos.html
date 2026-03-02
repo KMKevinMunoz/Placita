@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Placita — Préstamos</title>
+  <link rel="stylesheet" href="/css/global.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <style>
+    /* ── Resumen de saldo ─────────────────────────────── */
+    .saldo-hero { border-radius: var(--radius); padding: 24px 28px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .saldo-hero.equilibrado { background: #D1FAE5; border: 2px solid #6EE7B7; }
+    .saldo-hero.jose-debe   { background: #FEF3C7; border: 2px solid #FCD34D; }
+    .saldo-hero.claudia-debe{ background: #FFE4E6; border: 2px solid #FECDD3; }
+    .saldo-hero .hero-text h3 { margin: 0 0 4px; font-size: 20px; }
+    .saldo-hero .hero-text p  { margin: 0; font-size: 13px; color: var(--text-muted); }
+    .saldo-hero .hero-monto   { font-size: 36px; font-weight: 900; }
+    .saldo-hero.equilibrado .hero-monto { color: #065F46; }
+    .saldo-hero.jose-debe   .hero-monto { color: #92400E; }
+    .saldo-hero.claudia-debe .hero-monto { color: #9F1239; }
+
+    /* ── Tarjetas de desglose ─────────────────────────── */
+    .desglose-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+    .desglose-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+    .desglose-card .dc-avatar { font-size: 28px; margin-bottom: 8px; }
+    .desglose-card .dc-nombre { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .desglose-card .dc-area   { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+    .desglose-card .dc-row    { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+    .desglose-card .dc-row:last-child { border-bottom: none; font-weight: 700; font-size: 14px; padding-top: 8px; }
+    .dc-positivo { color: var(--green); }
+    .dc-negativo { color: #B91C1C; }
+
+    /* ── Tabla de préstamos ───────────────────────────── */
+    .prestamo-row td { vertical-align: middle; }
+    .prestamo-row.cancelado td { opacity: 0.45; text-decoration: line-through; }
+    .badge-activo    { background: #FEF3C7; color: #92400E; border-radius: 99px; padding: 2px 10px; font-size: 11px; font-weight: 700; }
+    .badge-cancelado { background: #D1FAE5; color: #065F46; border-radius: 99px; padding: 2px 10px; font-size: 11px; font-weight: 700; }
+    .persona-chip    { display: inline-flex; align-items: center; gap: 4px; border-radius: 99px; padding: 2px 10px; font-size: 12px; font-weight: 700; }
+    .chip-jose       { background: #DBEAFE; color: #1E40AF; }
+    .chip-claudia    { background: #FCE7F3; color: #9D174D; }
+    .chip-unknown    { background: var(--card); color: var(--text-muted); border: 1px solid var(--border); }
+    .filters         { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 20px; }
+    .filters .form-group { margin-bottom: 0; }
+    .total-row td    { font-weight: 800; font-size: 14px; background: var(--card); }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <button id="sidebar-close" class="sidebar-close" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('visible');document.body.style.overflow=''">✕</button>
+    <div class="sidebar-logo"><h2>🌿Placita</h2><h1>Frutos de Mi Campo</h1><h2>🐮🍉🌿🧺</h2></div>
+    <nav>
+      <div class="nav-section">Ventas</div>
+      <a class="nav-item" href="/pages/venta.html"><span class="icon">🛒</span> Registrar venta</a>
+      <a class="nav-item" href="/pages/recibos.html"><span class="icon">🧾</span> Recibos</a>
+      <div class="nav-section">Gestión</div>
+      <a class="nav-item" href="/pages/productos.html"><span class="icon">📦</span> Productos</a>
+      <a class="nav-item" href="/pages/ingresos.html"><span class="icon">📥</span> Ingresos</a>
+      <a class="nav-item active" href="/pages/prestamos.html"><span class="icon">🤝</span> Préstamos</a>
+      <a class="nav-item" href="/pages/lista.html"><span class="icon">📝</span> Lista de pedidos</a>
+      <a class="nav-item" href="/pages/pesas.html"><span class="icon">⚖️</span> Pesa USB</a>
+      <div class="nav-section">Reportes</div>
+      <a class="nav-item" href="/pages/contabilidad.html"><span class="icon">📊</span> Contabilidad</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info"><div class="user-avatar" id="user-avatar">?</div><div class="user-name" id="user-name">...</div></div>
+      <button class="btn-logout" onclick="api.logout()">Cerrar sesión</button>
+    </div>
+  </div>
+
+    <div id="sidebar-overlay"></div>
+  <div id="main-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <button id="menu-toggle" aria-label="Menú">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div><h2>Préstamos entre socios</h2><p>Pagos cruzados entre José y Claudia · se generan automáticamente al registrar ingresos</p></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="prestamosPage.reload()">↺ Actualizar</button>
+    </div>
+    <div class="page-body">
+
+      <!-- Saldo hero -->
+      <div id="saldo-hero" class="saldo-hero equilibrado">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+
+      <!-- Desglose por persona -->
+      <div class="desglose-grid" id="desglose-grid">
+        <div class="desglose-card"><div class="loading-center"><div class="spinner"></div></div></div>
+        <div class="desglose-card"><div class="loading-center"><div class="spinner"></div></div></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Filtros -->
+      <div class="section-title">📋 Historial de préstamos</div>
+      <div class="filters">
+        <div class="form-group">
+          <label>Ver</label>
+          <select id="filter-estado" onchange="prestamosPage.loadTabla()">
+            <option value="activos">Solo pendientes</option>
+            <option value="todos">Todos</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Persona</label>
+          <select id="filter-persona" onchange="prestamosPage.loadTabla()">
+            <option value="">Todos</option>
+            <option value="jose">👨 José</option>
+            <option value="claudia">👩 Claudia</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="prestamosPage.clearFilters()">Limpiar</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Quién pagó</th>
+              <th>Área pagada</th>
+              <th>Beneficiario</th>
+              <th>Monto</th>
+              <th>Referencia</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="prestamos-tbody">
+            <tr><td colspan="8"><div class="loading-center"><div class="spinner"></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación para cancelar -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="width:400px; text-align:center">
+    <div style="font-size:48px; margin-bottom:12px">✅</div>
+    <h3 style="margin-bottom:8px">Confirmar cancelación</h3>
+    <p id="confirm-text" style="color:var(--text-muted); margin-bottom:20px; font-size:14px"></p>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:20px">
+      <div id="confirm-detalle" style="font-size:13px"></div>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px">Al confirmar, este préstamo quedará marcado como <strong>pagado</strong> y no afectará el saldo pendiente.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn btn-secondary" onclick="prestamosPage.closeConfirm()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-confirm-ok" onclick="prestamosPage.confirmarCancelacion()">✅ Confirmar pago</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/js/ApiClient.js"></script>
+<script src="/js/lock.js"></script>
+<script src="/js/caja_base.js"></script>
+<script>document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>CajaBase.check(),700));</script>
+<script src="/js/ui.js"></script>
+<script src="/js/prestamos.js"></script>
+</body>
+</html>

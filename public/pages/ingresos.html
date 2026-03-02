@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Placita — Ingresos</title>
+  <link rel="stylesheet" href="/css/global.css"/>
+  <link rel="stylesheet" href="/css/components.css"/>
+  <style>
+    .ingreso-card {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 12px; transition: var(--transition);
+    }
+    .ingreso-card:hover { background: var(--card); border-color: var(--green-light); }
+    .ingreso-info { flex: 1; min-width: 0; }
+    .ingreso-producto { font-weight: 700; font-size: 15px; }
+    .ingreso-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .ingreso-registro { font-size: 11px; color: var(--text-muted); margin-top: 5px; display: flex; align-items: center; gap: 5px; }
+    .registro-user { font-weight: 700; color: var(--green-dim); }
+    .ingreso-pagadores { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+    .pagador-row { font-size: 13px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pagador-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      border-radius: 99px; padding: 3px 11px; font-size: 12px; font-weight: 700;
+    }
+    .pagador-chip.jose    { background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; }
+    .pagador-chip.claudia { background: #FDF4FF; color: #7E22CE; border: 1px solid #E9D5FF; }
+    .pagador-chip.otro    { background: var(--green-bg); color: var(--green-dim); border: 1px solid var(--border); }
+    .ingreso-monto { font-size: 22px; font-weight: 800; color: var(--green); white-space: nowrap; }
+    .ingreso-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .dept-tag { display: inline-block; border-radius: 6px; padding: 2px 9px; font-size: 11px; font-weight: 700; }
+    .dept-tag.verduras   { background: #D1FAE5; color: #065F46; }
+    .dept-tag.carniceria { background: #FFE4D6; color: #9A3412; }
+    .day-group { margin-bottom: 28px; }
+    .day-group-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; background: var(--card); border-radius: var(--radius-sm);
+      margin-bottom: 10px; border: 1px solid var(--border);
+    }
+    .day-group-header h4 { margin: 0; font-size: 14px; font-weight: 700; text-transform: capitalize; }
+    .day-total { font-weight: 700; font-size: 14px; color: var(--green); }
+    .resumen-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+    .resumen-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+    .resumen-card .label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+    .resumen-card .value { font-size: 22px; font-weight: 800; }
+    .resumen-card .sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .value.green { color: var(--green); }
+    .filters {
+      display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;
+      margin-bottom: 20px; padding: 14px 16px;
+      background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius);
+    }
+    .filters .form-group { margin-bottom: 0; flex: 1; min-width: 120px; }
+    .filters label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 4px; display: block; }
+    .modal-ingreso { width: 560px; }
+    .modal-section-label {
+      font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px;
+      color: var(--text-muted); margin: 16px 0 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .modal-section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .persona-selector { display: flex; gap: 8px; }
+    .persona-btn {
+      flex: 1; padding: 12px 8px; border: 2px solid var(--border);
+      border-radius: var(--radius-sm); background: var(--card);
+      cursor: pointer; font-family: var(--sans); font-size: 14px;
+      font-weight: 600; color: var(--text-muted); transition: var(--transition);
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .persona-btn .p-avatar { font-size: 24px; }
+    .persona-btn .p-name   { font-size: 14px; font-weight: 700; }
+    .persona-btn .p-area   { font-size: 10px; opacity: .7; }
+    .persona-btn:hover { border-color: var(--green); background: var(--green-bg); }
+    .persona-btn.selected-jose    { border-color: #0EA5E9; background: #E0F2FE; color: #0369A1; }
+    .persona-btn.selected-claudia { border-color: #A855F7; background: #FDF4FF; color: #7E22CE; }
+    .total-box {
+      background: var(--green-bg); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px 16px; margin: 14px 0;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .total-box .lbl { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+    .total-box .val { font-size: 26px; font-weight: 900; color: var(--green); }
+    .prestamo-alert {
+      display: none; background: #FEF3C7; border: 1.5px solid #FCD34D;
+      border-radius: var(--radius-sm); padding: 10px 14px;
+      font-size: 12px; color: #92400E; margin: 8px 0 4px;
+    }
+    .prestamo-alert.show { display: flex; align-items: flex-start; gap: 8px; }
+    @media (max-width: 768px) {
+      .resumen-bar { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .filters { gap: 8px; padding: 12px; }
+      .filters .form-group { min-width: calc(50% - 4px); }
+      .ingreso-card { flex-direction: column; gap: 8px; }
+      .ingreso-actions { align-self: flex-end; }
+      .modal-ingreso { width: 100% !important; }
+      .persona-selector { gap: 6px; }
+      .persona-btn { padding: 10px 6px; }
+    }
+    @media (max-width: 480px) {
+      .resumen-bar { grid-template-columns: 1fr; }
+      .filters .form-group { min-width: 100%; }
+      .day-group-header { flex-direction: column; align-items: flex-start; gap: 2px; }
+      .ingreso-monto { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <button id="sidebar-close" class="sidebar-close"
+      onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('visible');document.body.style.overflow=''">✕</button>
+    <div class="sidebar-logo"><h2>🌿Placita</h2><h1>Frutos de Mi Campo</h1><h2>🐮🍉🌿🧺</h2></div>
+    <nav>
+      <div class="nav-section">Ventas</div>
+      <a class="nav-item" href="/pages/venta.html"><span class="icon">🛒</span> Registrar venta</a>
+      <a class="nav-item" href="/pages/recibos.html"><span class="icon">🧾</span> Recibos</a>
+      <div class="nav-section">Gestión</div>
+      <a class="nav-item" href="/pages/productos.html"><span class="icon">📦</span> Productos</a>
+      <a class="nav-item active" href="/pages/ingresos.html"><span class="icon">📥</span> Ingresos</a>
+      <a class="nav-item" href="/pages/prestamos.html"><span class="icon">🤝</span> Préstamos</a>
+      <a class="nav-item" href="/pages/lista.html"><span class="icon">📝</span> Lista de pedidos</a>
+      <a class="nav-item" href="/pages/pesas.html"><span class="icon">⚖️</span> Pesa USB</a>
+      <div class="nav-section">Reportes</div>
+      <a class="nav-item" href="/pages/contabilidad.html"><span class="icon">📊</span> Contabilidad</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info"><div class="user-avatar" id="user-avatar">?</div><div class="user-name" id="user-name">...</div></div>
+      <button class="btn-logout" onclick="api.logout()">Cerrar sesión</button>
+    </div>
+  </div>
+  <div id="sidebar-overlay"></div>
+
+  <div id="main-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <button id="menu-toggle" aria-label="Menú">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div><h2>📥 Ingresos</h2><p>Registra lo que llega al local cada día</p></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn btn-secondary btn-sm" onclick="ingresosPage.load()">↺</button>
+        <button class="btn btn-primary" onclick="ingresosPage.openModal()">+ Registrar</button>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <div class="section-title" style="margin-bottom:12px">📊 Resumen de hoy</div>
+      <div class="resumen-bar" id="resumen-hoy">
+        <div class="resumen-card"><div class="label">Cargando...</div></div>
+      </div>
+      <div class="divider"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div class="section-title" style="margin:0">📋 Historial de ingresos</div>
+      </div>
+      <div class="filters">
+        <div class="form-group"><label>Desde</label><input type="date" id="filter-from" onchange="ingresosPage.load()"/></div>
+        <div class="form-group"><label>Hasta</label><input type="date" id="filter-to" onchange="ingresosPage.load()"/></div>
+        <div class="form-group">
+          <label>Área</label>
+          <select id="filter-dept" onchange="ingresosPage.load()">
+            <option value="">Todas</option>
+            <option value="verduras_granos">🥦 Verduras</option>
+            <option value="carniceria">🥩 Carnicería</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Recibido por</label>
+          <select id="filter-persona" onchange="ingresosPage.load()">
+            <option value="">Todos</option>
+            <option value="jose">👨 José</option>
+            <option value="claudia">👩 Claudia</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="ingresosPage.clearFilters()" style="align-self:flex-end">Limpiar</button>
+      </div>
+      <div id="ingresos-list"><div class="loading-center"><div class="spinner"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="ingreso-modal">
+  <div class="modal modal-ingreso">
+    <h3 id="modal-title">Registrar ingreso</h3>
+
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>Producto / descripción *</label>
+        <input type="text" id="m-producto" placeholder="Ej: Tomates cherry, Lomo de cerdo..."/>
+      </div>
+      <div class="form-group" style="flex:1">
+        <label>Área *</label>
+        <select id="m-dept" onchange="ingresosPage.onDeptChange()">
+          <option value="verduras_granos">🥦 Verduras</option>
+          <option value="carniceria">🥩 Carnicería</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Cantidad (opcional)</label>
+        <input type="text" id="m-cantidad" placeholder="Ej: 5 kg, 3 cajas..."/>
+      </div>
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" id="m-fecha"/>
+      </div>
+    </div>
+
+    <div class="modal-section-label">💳 Pagos recibidos</div>
+
+    <!-- Pagador 1 -->
+    <div style="margin-bottom:4px">
+      <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:8px">
+        ¿Quién recibió el dinero? *
+      </label>
+      <div class="persona-selector" id="persona1-selector">
+        <button type="button" class="persona-btn" data-val="jose" onclick="ingresosPage.selectPersona(1,'jose')">
+          <span class="p-avatar">👨</span>
+          <span class="p-name">José</span>
+          <span class="p-area">🥦 Verduras</span>
+        </button>
+        <button type="button" class="persona-btn" data-val="claudia" onclick="ingresosPage.selectPersona(1,'claudia')">
+          <span class="p-avatar">👩</span>
+          <span class="p-name">Claudia</span>
+          <span class="p-area">🥩 Carnicería</span>
+        </button>
+      </div>
+      <input type="hidden" id="m-pag1" value=""/>
+    </div>
+    <div class="prestamo-alert" id="alert-pag1">
+      <span style="font-size:15px;flex-shrink:0">⚠️</span>
+      <span id="alert-pag1-text"></span>
+    </div>
+    <div style="margin-top:10px">
+      <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Monto *</label>
+      <input type="number" id="m-mon1" placeholder="0" min="0" step="100" oninput="ingresosPage.calcTotal()" style="margin-top:4px"/>
+    </div>
+
+    <!-- Pagador 2 -->
+    <div id="pag2-wrap" style="display:none;margin-top:14px">
+      <div class="modal-section-label" style="margin-top:0">👥 Segundo pagador</div>
+      <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);display:block;margin-bottom:8px">
+        ¿Quién recibió el segundo pago?
+      </label>
+      <div class="persona-selector" id="persona2-selector">
+        <button type="button" class="persona-btn" data-val="jose" onclick="ingresosPage.selectPersona(2,'jose')">
+          <span class="p-avatar">👨</span>
+          <span class="p-name">José</span>
+          <span class="p-area">🥦 Verduras</span>
+        </button>
+        <button type="button" class="persona-btn" data-val="claudia" onclick="ingresosPage.selectPersona(2,'claudia')">
+          <span class="p-avatar">👩</span>
+          <span class="p-name">Claudia</span>
+          <span class="p-area">🥩 Carnicería</span>
+        </button>
+      </div>
+      <input type="hidden" id="m-pag2" value=""/>
+      <div style="margin-top:10px">
+        <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Monto</label>
+        <input type="number" id="m-mon2" placeholder="0" min="0" step="100" oninput="ingresosPage.calcTotal()" style="margin-top:4px"/>
+      </div>
+      <div class="prestamo-alert" id="alert-pag2">
+        <span style="font-size:15px;flex-shrink:0">⚠️</span>
+        <span id="alert-pag2-text"></span>
+      </div>
+    </div>
+
+    <button class="btn btn-secondary btn-sm" id="btn-add-pag2"
+      onclick="ingresosPage.togglePag2()" style="margin-top:12px">
+      + Agregar segundo pagador
+    </button>
+
+    <div class="total-box">
+      <span class="lbl">💰 Total del ingreso</span>
+      <span class="val" id="m-total-display">$0</span>
+      <input type="hidden" id="m-total" value="0"/>
+    </div>
+
+    <div class="form-group">
+      <label>Notas (opcional)</label>
+      <input type="text" id="m-notas" placeholder="Observaciones..."/>
+    </div>
+
+    <div id="modal-error" class="msg-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="ingresosPage.closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-ingreso" onclick="ingresosPage.save()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/js/ApiClient.js"></script>
+<script src="/js/lock.js"></script>
+<script src="/js/caja_base.js"></script>
+<script>document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>CajaBase.check(),700));</script>
+<script src="/js/ui.js"></script>
+<script src="/js/ingresos.js"></script>
+</body>
+</html>

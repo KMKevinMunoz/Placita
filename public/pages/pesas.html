@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Placita — Pesas</title>
+  <link rel="stylesheet" href="/css/global.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <button id="sidebar-close" class="sidebar-close" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('visible');document.body.style.overflow=''">✕</button>
+    <div class="sidebar-logo"><h2>🌿Placita</h2><h1>Frutos de Mi Campo</h1><h2>🐮🍉🌿🧺</h2></div>
+    <nav>
+      <div class="nav-section">Ventas</div>
+      <a class="nav-item" href="/pages/venta.html"><span class="icon">🛒</span> Registrar venta</a>
+      <a class="nav-item" href="/pages/recibos.html"><span class="icon">🧾</span> Recibos</a>
+      <div class="nav-section">Gestión</div>
+      <a class="nav-item" href="/pages/productos.html"><span class="icon">📦</span> Productos</a>
+      <a class="nav-item" href="/pages/ingresos.html"><span class="icon">📥</span> Ingresos</a>
+      <a class="nav-item" href="/pages/prestamos.html"><span class="icon">🤝</span> Préstamos</a>
+      <a class="nav-item" href="/pages/lista.html"><span class="icon">📝</span> Lista de pedidos</a>
+      <a class="nav-item active" href="/pages/pesas.html"><span class="icon">⚖️</span> Pesa USB</a>
+      <div class="nav-section">Reportes</div>
+      <a class="nav-item" href="/pages/contabilidad.html"><span class="icon">📊</span> Contabilidad</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info"><div class="user-avatar" id="user-avatar">?</div><div class="user-name" id="user-name">...</div></div>
+      <button class="btn-logout" onclick="api.logout()">Cerrar sesión</button>
+    </div>
+  </div>
+    <div id="sidebar-overlay"></div>
+  <div id="main-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <button id="menu-toggle" aria-label="Menú">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div><h2>Pesas / Básculas</h2><p>Registra y administra las pesas utilizadas en cada área</p></div>
+      </div>
+      <button class="btn btn-primary" onclick="pesasPage.openModal()">+ Nueva pesa</button>
+    </div>
+    <div class="page-body">
+
+      <div class="dept-header verduras"><span style="font-size:24px">🥦</span><h3>Verduras y Granos</h3></div>
+      <div class="table-wrap" style="margin-bottom:32px">
+        <table>
+          <thead><tr><th>Nombre</th><th>Unidad</th><th>Capacidad</th><th>Notas</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-scales-verduras"></tbody>
+        </table>
+      </div>
+
+      <div class="dept-header carniceria"><span style="font-size:24px">🥩</span><h3>Carnicería</h3></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nombre</th><th>Unidad</th><th>Capacidad</th><th>Notas</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-scales-carniceria"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="scale-modal">
+  <div class="modal">
+    <h3 id="modal-title-scale">Nueva pesa</h3>
+    <div class="form-group"><label>Nombre / Identificación *</label><input type="text" id="modal-scale-name" placeholder="Ej: Pesa principal, Báscula #1..." /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Unidad</label>
+        <select id="modal-scale-unit"><option value="kg">Kilogramos (kg)</option><option value="lb">Libras (lb)</option><option value="g">Gramos (g)</option></select>
+      </div>
+      <div class="form-group"><label>Capacidad máxima</label><input type="number" id="modal-scale-capacity" placeholder="Ej: 50" min="0" step="0.1" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Departamento</label>
+        <select id="modal-scale-dept"><option value="verduras_granos">🥦 Verduras y Granos</option><option value="carniceria">🥩 Carnicería</option></select>
+      </div>
+      <div class="form-group"><label>Estado</label>
+        <select id="modal-scale-active"><option value="true">Activa</option><option value="false">Inactiva</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Notas</label><input type="text" id="modal-scale-notes" placeholder="Ej: Calibrada enero 2026, ubicación mostrador..." /></div>
+    <div id="modal-scale-error" class="msg-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="pesasPage.closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-scale" onclick="pesasPage.saveScale()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/js/ApiClient.js"></script>
+<script src="/js/lock.js"></script>
+<script src="/js/caja_base.js"></script>
+<script>document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>CajaBase.check(),700));</script>
+<script src="/js/ui.js"></script>
+<script src="/js/pesas.js"></script>
+
+</body></html>

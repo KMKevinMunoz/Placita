@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Placita — Recibos</title>
+  <link rel="stylesheet" href="/css/global.css"/>
+  <link rel="stylesheet" href="/css/components.css"/>
+  <style>
+    @media print {
+      body > *:not(#print-area){display:none !important;}
+      #print-area{display:block !important;}
+    }
+    .stat-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+    .stat-mini-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;}
+    .stat-mini-card .label{font-size:11px;color:var(--text-muted);}
+    .stat-mini-card .value{font-size:20px;font-weight:800;margin-top:2px;}
+    .stat-mini-card .value.green{color:var(--green);}
+    .stat-mini-card .value.gold{color:var(--gold);}
+    .search-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+    .search-filters select{width:auto;flex:none;}
+    .search-filters input{flex:1;min-width:140px;}
+    .day-group{margin-bottom:24px;}
+    .day-label{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--card);border-radius:var(--radius-sm);margin-bottom:8px;flex-wrap:wrap;gap:6px;}
+    .day-label h4{font-family:var(--serif);font-size:15px;font-weight:700;text-transform:capitalize;}
+    .day-sum{font-size:13px;font-weight:700;color:var(--green);}
+    .recibo-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;transition:border-color .2s;}
+    .recibo-card.open{border-color:var(--green);}
+    .recibo-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;gap:8px;}
+    .recibo-header:hover{background:var(--card);}
+    .recibo-header-left{display:flex;align-items:center;gap:10px;min-width:0;}
+    .recibo-num{font-size:10px;font-weight:700;color:var(--text-muted);white-space:nowrap;background:var(--card);border:1px solid var(--border);border-radius:4px;padding:2px 6px;}
+    .recibo-cajero{font-size:12px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .recibo-total{font-family:var(--serif);font-size:18px;font-weight:700;color:var(--green);white-space:nowrap;}
+    .recibo-chevron{color:var(--text-muted);transition:transform .2s;}
+    .recibo-card.open .recibo-chevron{transform:rotate(180deg);}
+    .recibo-body{display:none;border-top:1px solid var(--border);padding:16px;}
+    .recibo-card.open .recibo-body{display:block;}
+    .recibo-ticket{max-width:300px;margin:0 auto;background:var(--card);border:1px dashed var(--border);border-radius:var(--radius-sm);padding:14px;font-family:monospace;font-size:12px;}
+    .ticket-header{text-align:center;margin-bottom:8px;}
+    .ticket-header h4{font-family:var(--serif);font-size:15px;font-weight:900;margin:0 0 2px;}
+    .ticket-header p{font-size:11px;color:var(--text-muted);margin:0;}
+    .ticket-divider{border:none;border-top:1px dashed #ccc;margin:8px 0;}
+    .ticket-dept{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:2px 6px;border-radius:3px;display:inline-block;}
+    .ticket-dept.verd{background:#D1FAE5;color:#065F46;}
+    .ticket-dept.carn{background:#FFE4D6;color:#9A3412;}
+    .ticket-item{display:flex;align-items:center;gap:4px;padding:2px 0;}
+    .ticket-item .name{flex:1;}
+    .ticket-item .qty{color:var(--text-muted);width:60px;text-align:right;}
+    .ticket-item .sub{font-weight:700;width:70px;text-align:right;}
+    .ticket-total-row{display:flex;justify-content:space-between;font-weight:800;font-size:13px;padding:3px 0;}
+    .ticket-footer{text-align:center;font-size:10px;color:var(--text-muted);margin-top:8px;}
+    .recibo-actions{display:flex;justify-content:center;margin-top:12px;gap:8px;}
+    @media(max-width:600px){
+      .stat-mini{grid-template-columns:repeat(2,1fr);}
+      .recibo-header{padding:10px 12px;}
+      .recibo-num{display:none;}
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <button id="sidebar-close" class="sidebar-close" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('visible');document.body.style.overflow=''">✕</button>
+    <div class="sidebar-logo"><h2>🌿Placita</h2><h1>Frutos de Mi Campo</h1><h2>🐮🍉🌿🧺</h2></div>
+    <nav>
+      <div class="nav-section">Ventas</div>
+      <a class="nav-item" href="/pages/venta.html"><span class="icon">🛒</span> Registrar venta</a>
+      <a class="nav-item active" href="/pages/recibos.html"><span class="icon">🧾</span> Recibos</a>
+      <div class="nav-section">Gestión</div>
+      <a class="nav-item" href="/pages/productos.html"><span class="icon">📦</span> Productos</a>
+      <a class="nav-item" href="/pages/ingresos.html"><span class="icon">📥</span> Ingresos</a>
+      <a class="nav-item" href="/pages/prestamos.html"><span class="icon">🤝</span> Préstamos</a>
+      <a class="nav-item" href="/pages/lista.html"><span class="icon">📝</span> Lista de pedidos</a>
+      <a class="nav-item" href="/pages/pesas.html"><span class="icon">⚖️</span> Pesa USB</a>
+      <div class="nav-section">Reportes</div>
+      <a class="nav-item" href="/pages/contabilidad.html"><span class="icon">📊</span> Contabilidad</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info"><div class="user-avatar" id="user-avatar">?</div><div class="user-name" id="user-name">...</div></div>
+      <button class="btn-logout" onclick="api.logout()">Cerrar sesión</button>
+    </div>
+  </div>
+  <div id="sidebar-overlay"></div>
+
+  <div id="main-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <button id="menu-toggle" aria-label="Menú">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div><h2>🧾 Recibos</h2><p>Historial de ventas</p></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="recibosPage.load()">↺</button>
+    </div>
+    <div class="page-body">
+
+      <!-- Stats mini -->
+      <div class="stat-mini" id="stat-mini"></div>
+
+      <!-- Date range bar -->
+      <div class="date-range-bar" id="recibos-drb">
+        <span class="drb-label">📅 Período</span>
+        <div class="drb-dates" style="display:flex;align-items:center;gap:8px;">
+          <input type="date" class="drb-from" id="filter-from"/>
+          <span class="drb-sep">→</span>
+          <input type="date" class="drb-to" id="filter-to"/>
+        </div>
+        <div class="drb-btns">
+          <button class="drb active" data-range="today">Hoy</button>
+          <button class="drb" data-range="week">Esta semana</button>
+          <button class="drb" data-range="month">Este mes</button>
+        </div>
+      </div>
+
+      <!-- Filtros locales -->
+      <div class="search-filters">
+        <select id="filter-dept" onchange="recibosPage.filterLocal()">
+          <option value="">Todos los departamentos</option>
+          <option value="verduras_granos">🥦 Verduras y Granos</option>
+          <option value="carniceria">🥩 Carnicería</option>
+        </select>
+        <input type="text" id="filter-search" placeholder="🔍 Buscar producto..." oninput="recibosPage.filterLocal()"/>
+      </div>
+
+      <div id="recibos-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="print-area" style="display:none"></div>
+<div id="toast"></div>
+<script src="/js/ApiClient.js"></script>
+<script src="/js/lock.js"></script>
+<script src="/js/caja_base.js"></script>
+<script>document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>CajaBase.check(),700));</script>
+<script src="/js/ui.js"></script>
+<script src="/js/recibos.js"></script>
+</body></html>

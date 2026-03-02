@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Placita — Ventas</title>
+  <link rel="stylesheet" href="/css/global.css"/>
+  <link rel="stylesheet" href="/css/components.css"/>
+  <style>
+    .pos-layout{display:flex;flex:1;overflow:hidden;}
+    .pos-products{flex:1;overflow-y:auto;padding:20px;transition:background .3s;}
+    .pos-products.meat-theme{background:#FDF6F2;}
+    .search-wrap{position:relative;margin-bottom:16px;}
+    .search-wrap input{padding-left:38px;}
+    .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;}
+    .products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+    .product-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 10px 14px;cursor:pointer;transition:var(--transition);position:relative;user-select:none;box-shadow:var(--shadow);text-align:center;}
+    .product-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(74,155,63,.15);border-color:var(--green);}
+    .product-card.in-cart{border-color:var(--green);background:var(--green-bg);}
+    .product-card.meat-card:hover{border-color:var(--meat);}
+    .product-card.meat-card.in-cart{border-color:var(--meat);background:var(--meat-bg);}
+    .product-card:active{transform:scale(.97);}
+    .p-emoji{font-size:32px;line-height:1;margin-bottom:6px;}
+    .p-name{font-weight:600;font-size:13px;margin-bottom:2px;}
+    .p-unit{font-size:11px;color:var(--text-muted);}
+    .p-price{font-family:var(--serif);font-size:16px;font-weight:700;color:var(--green);margin-top:5px;}
+    .p-price.meat{color:var(--meat);}
+    .qty-badge{position:absolute;top:5px;right:5px;background:var(--green);color:white;border-radius:99px;font-size:9px;font-weight:700;padding:2px 6px;}
+    .weight-icon{position:absolute;top:6px;left:6px;font-size:11px;opacity:.4;}
+    .scale-indicator{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:600;}
+    .scale-indicator.on{background:var(--green-bg);color:var(--green-dim);border:1px solid var(--border);}
+    .scale-indicator.off{background:var(--card);color:var(--text-muted);border:1px solid var(--border);}
+    .scale-indicator.on::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);flex-shrink:0;}
+    .scale-indicator.off::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--text-muted);flex-shrink:0;}
+    /* Carrito */
+    .pos-cart{width:290px;min-width:290px;border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;}
+    .cart-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .cart-header h3{font-family:var(--serif);font-size:17px;font-weight:700;}
+    .cart-count{background:var(--green);color:white;border-radius:99px;font-size:11px;font-weight:700;padding:2px 10px;}
+    .cart-items{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+    .cart-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;}
+    .cart-item.cart-item-meat{border-left:3px solid var(--meat);}
+    .cart-item-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px;}
+    .cart-item-name{font-weight:600;font-size:13px;}
+    .cart-remove{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;}
+    .cart-remove:hover{color:var(--red);}
+    .cart-item-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+    .qty-input{width:80px;padding:6px 8px;font-size:13px;text-align:center;}
+    .cart-subtotal{font-family:var(--serif);font-size:15px;font-weight:700;color:var(--gold);}
+    .cart-subtotal.meat{color:var(--meat);}
+    .cart-empty{text-align:center;padding:40px 20px;color:var(--text-muted);}
+    .cart-empty .empty-icon{font-size:40px;margin-bottom:10px;}
+    .cart-footer{padding:12px 14px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
+    .cart-footer textarea{height:44px;resize:none;font-size:13px;}
+    #cart-subtotals{display:flex;flex-direction:column;gap:4px;}
+    .subtotal-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;padding:5px 8px;border-radius:6px;}
+    .subtotal-row.verduras{background:var(--green-bg);color:var(--green-dim);}
+    .subtotal-row.carniceria{background:var(--meat-bg);color:var(--meat);}
+    .subtotal-divider{height:1px;background:var(--border);margin:4px 0 2px;}
+    .cart-total-row{display:flex;justify-content:space-between;align-items:center;}
+    .cart-total-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
+    .cart-total-amount{font-family:var(--serif);font-size:30px;font-weight:900;color:var(--green);}
+    /* Modal peso */
+    .weight-modal-box{width:360px;max-width:95vw;}
+    /* Siempre encima del splash de base del día (z-index 9900) */
+    #weight-modal, #pay-modal { z-index: 10000; }
+    .wm-header{display:flex;align-items:center;gap:12px;padding:16px 20px;border-radius:var(--radius) var(--radius) 0 0;margin:-32px -32px 18px;}
+    .wm-header.verduras{background:var(--green-bg);border-bottom:1px solid var(--border);}
+    .wm-header.meat{background:var(--meat-bg);border-bottom:1px solid #F0C4A8;}
+    .wm-product-emoji{font-size:36px;}
+    .wm-header h3{font-family:var(--serif);font-size:19px;font-weight:700;margin:0;}
+    .wm-header.verduras h3{color:var(--green-dim);}
+    .wm-header.meat h3{color:var(--meat);}
+    .wm-auto-badge{display:none;align-items:center;gap:5px;background:var(--green-bg);color:var(--green-dim);border:1px solid var(--border);border-radius:99px;padding:3px 12px;font-size:11px;font-weight:700;margin-bottom:10px;}
+    .wm-price-hint{font-size:12px;color:var(--text-muted);margin-bottom:10px;}
+    .weight-input-big{font-family:var(--serif);font-size:40px;font-weight:700;text-align:center;padding:14px;letter-spacing:1px;caret-color:transparent;}
+    .weight-input-big::placeholder{color:var(--text-muted);opacity:.25;font-weight:400;}
+    .wm-result-box{display:none;flex-direction:column;gap:5px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:12px;}
+    .wm-result-row{display:flex;justify-content:space-between;font-size:13px;}
+    .wm-result-row span:first-child{color:var(--text-muted);}
+    .wm-result-total{border-top:1px solid var(--border);padding-top:10px;margin-top:4px;}
+    .wm-result-total span:first-child{font-weight:700;}
+    .wm-total-amount{font-family:var(--serif);font-size:30px;font-weight:900;color:var(--green);}
+    .wm-total-amount.meat{color:var(--meat);}
+    /* Modal pago */
+    .pay-modal-box{width:500px;max-width:96vw;}
+    .pay-total-hero{text-align:center;background:var(--green-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;}
+    .pay-total-hero .label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
+    .pay-total-hero .amount{font-family:var(--serif);font-size:40px;font-weight:900;color:var(--green);line-height:1.1;}
+    .pay-vuelto-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;transition:opacity .2s;}
+    .pay-row{display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:3px 0;}
+    .pay-row .lbl{color:var(--text-muted);}
+    .pay-row .val{font-weight:700;font-size:16px;}
+    /* Ticket */
+    .ticket-wrap{border:1px dashed var(--border);border-radius:var(--radius-sm);padding:16px;margin-top:14px;background:var(--surface);max-height:280px;overflow-y:auto;}
+    .ticket-store{text-align:center;margin-bottom:8px;}
+    .ticket-store h4{font-family:var(--serif);font-size:16px;font-weight:900;margin:0 0 2px;}
+    .ticket-store p{font-size:11px;color:var(--text-muted);margin:0;}
+    .ticket-hr{border:none;border-top:1px dashed #ccc;margin:8px 0;}
+    .ticket-dept-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin:6px 0 3px;padding:2px 6px;border-radius:4px;display:inline-block;}
+    .ticket-dept-label.verd{background:#D1FAE5;color:#065F46;}
+    .ticket-dept-label.carn{background:#FFE4D6;color:#9A3412;}
+    .ticket-line{display:flex;align-items:center;gap:4px;font-size:12px;padding:2px 0;font-family:monospace;}
+    .ticket-line .tl-name{flex:1;}
+    .ticket-line .tl-qty{color:var(--text-muted);white-space:nowrap;width:65px;text-align:right;}
+    .ticket-line .tl-sub{font-weight:700;white-space:nowrap;width:70px;text-align:right;}
+    .ticket-total-section{margin-top:6px;padding-top:6px;border-top:1px dashed #ccc;}
+    .ticket-total-row{display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding:2px 0;font-family:monospace;}
+    .ticket-total-row.main{font-size:15px;color:var(--green);}
+    .ticket-footer-txt{text-align:center;font-size:10px;color:var(--text-muted);margin-top:8px;}
+    @media print{
+      body>*:not(#print-area){display:none !important;}
+      #print-area{display:block !important;}
+    }
+    /* Móvil: carrito colapsable */
+    @media(max-width:768px){
+      .pos-layout{flex-direction:column;}
+      .pos-products{padding:12px;}
+      .pos-cart{width:100%;min-width:unset;border-left:none;border-top:1px solid var(--border);max-height:45vh;}
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <button id="sidebar-close" class="sidebar-close" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('visible');document.body.style.overflow=''">✕</button>
+    <div class="sidebar-logo"><h2>🌿Placita</h2><h1>Frutos de Mi Campo</h1><h2>🐮🍉🌿🧺</h2></div>
+    <nav>
+      <div class="nav-section">Ventas</div>
+      <a class="nav-item active" href="/pages/venta.html"><span class="icon">🛒</span> Registrar venta</a>
+      <a class="nav-item" href="/pages/recibos.html"><span class="icon">🧾</span> Recibos</a>
+      <div class="nav-section">Gestión</div>
+      <a class="nav-item" href="/pages/productos.html"><span class="icon">📦</span> Productos</a>
+      <a class="nav-item" href="/pages/ingresos.html"><span class="icon">📥</span> Ingresos</a>
+      <a class="nav-item" href="/pages/prestamos.html"><span class="icon">🤝</span> Préstamos</a>
+      <a class="nav-item" href="/pages/lista.html"><span class="icon">📝</span> Lista de pedidos</a>
+      <a class="nav-item" href="/pages/pesas.html"><span class="icon">⚖️</span> Pesa USB</a>
+      <div class="nav-section">Reportes</div>
+      <a class="nav-item" href="/pages/contabilidad.html"><span class="icon">📊</span> Contabilidad</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info"><div class="user-avatar" id="user-avatar">?</div><div class="user-name" id="user-name">...</div></div>
+      <button class="btn-logout" onclick="api.logout()">Cerrar sesión</button>
+    </div>
+  </div>
+  <div id="sidebar-overlay"></div>
+
+  <div id="main-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <button id="menu-toggle" aria-label="Menú">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div><h2>Registrar Venta</h2><p>Productos con ⚖️ usan la pesa</p></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="scale-indicator off" id="scale-indicator">⚖️ Sin pesa</span>
+        <button class="btn btn-secondary btn-sm" onclick="ventaPage.loadProducts()">↺</button>
+      </div>
+    </div>
+
+    <div class="pos-layout">
+      <div class="pos-products" id="pos-products-area">
+        <div class="dept-tabs">
+          <button class="dept-tab active-verduras" data-dept="verduras_granos" onclick="ventaPage.switchDept('verduras_granos')">🥦 Verduras y Granos</button>
+          <button class="dept-tab" data-dept="carniceria" onclick="ventaPage.switchDept('carniceria')">🥩 Carnicería</button>
+        </div>
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="Buscar producto..."/>
+        </div>
+        <div id="products-grid" class="products-grid">
+          <div class="loading-center" style="grid-column:1/-1"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <div class="pos-cart">
+        <div class="cart-header"><h3>Venta actual</h3><span class="cart-count" id="cart-count">0</span></div>
+        <div id="cart-items" class="cart-items">
+          <div class="cart-empty"><div class="empty-icon">🛒</div><p>Toca un producto para agregar</p></div>
+        </div>
+        <div class="cart-footer">
+          <div><label>Notas (opcional)</label><textarea id="cart-notes" placeholder="Domicilio, nombre cliente..."></textarea></div>
+          <div id="cart-subtotals"></div>
+          <div class="cart-total-row">
+            <span class="cart-total-label">Total</span>
+            <span class="cart-total-amount" id="cart-total">$0</span>
+          </div>
+          <button id="btn-complete-sale" class="btn btn-gold btn-full" onclick="ventaPage.completeSale()" disabled>✓ Completar Venta</button>
+          <button class="btn btn-secondary btn-full btn-sm" onclick="ventaPage.clearCart()">Limpiar carrito</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PESO -->
+<div class="modal-overlay" id="weight-modal">
+  <div class="modal weight-modal-box">
+    <div class="wm-header verduras" id="wm-header">
+      <span class="wm-product-emoji" id="wm-product-emoji">⚖️</span>
+      <h3 id="wm-product-name">Producto</h3>
+    </div>
+    <div class="wm-auto-badge" id="wm-auto-badge">⚡ Peso leído automáticamente</div>
+    <p class="wm-price-hint">Precio: <strong id="wm-price-label">—</strong></p>
+    <div>
+      <label>Peso en la pesa (<span id="wm-unit-label">kg</span>)</label>
+      <input type="text" id="weight-input" class="weight-input-big" placeholder="0,000" inputmode="numeric" autocomplete="off" readonly/>
+    </div>
+    <div class="wm-result-box" id="wm-result-box">
+      <div class="wm-result-row"><span>Peso</span><span><strong id="wm-weight-display">—</strong></span></div>
+      <div class="wm-result-row"><span>Precio / unidad</span><span id="wm-price-display">—</span></div>
+      <div class="wm-result-row wm-result-total">
+        <span>Total a cobrar</span><span class="wm-total-amount" id="wm-total-display">$0</span>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:18px">
+      <button class="btn btn-secondary" onclick="ventaPage.closeWeightModal()">Cancelar</button>
+      <button class="btn btn-primary btn-lg" id="wm-btn-add" onclick="ventaPage.confirmWeight()" disabled>✓ Agregar al carrito</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAGO -->
+<div class="modal-overlay" id="pay-modal">
+  <div class="modal pay-modal-box">
+    <h3 style="margin-bottom:14px">💳 Cobrar venta</h3>
+
+    <div class="pay-total-hero">
+      <div class="label">Total a cobrar</div>
+      <div class="amount" id="pay-total-display">$0</div>
+    </div>
+
+    <div id="pay-billete-section">
+      <div class="form-group">
+        <label>💵 Billete del cliente (opcional)</label>
+        <input type="text" id="pay-billete" inputmode="numeric" placeholder="Ej: 50.000"
+          style="font-size:22px;font-weight:700;padding:12px;letter-spacing:1px"/>
+      </div>
+      <div class="pay-vuelto-box" id="pay-vuelto-row" style="opacity:.4">
+        <div class="pay-row">
+          <span class="lbl">💵 Billete recibido</span>
+          <span class="val" id="pay-billete-val">—</span>
+        </div>
+        <div class="pay-row">
+          <span class="lbl" style="color:var(--green-dim);font-weight:700">🔄 Vuelto a dar</span>
+          <span class="val" style="font-size:24px" id="pay-vuelto">—</span>
+        </div>
+      </div>
+      <div class="msg-error" id="pay-modal-error" style="margin-top:8px"></div>
+    </div>
+
+    <div id="pay-receipt-wrap" style="display:none">
+      <div style="text-align:center;margin-bottom:6px;color:var(--green);font-weight:700;font-size:14px">✅ ¡Venta registrada!</div>
+    </div>
+
+    <!-- Ticket (siempre visible como preview) -->
+    <div class="ticket-wrap" id="pay-ticket">
+      <div class="ticket-store">
+        <h4>🌿 Frutos de Mi Campo</h4>
+        <p id="ticket-fecha">—</p>
+      </div>
+      <hr class="ticket-hr"/>
+      <div id="ticket-items"></div>
+      <div class="ticket-total-section">
+        <div class="ticket-total-row main"><span>TOTAL</span><span id="ticket-total-val">$0</span></div>
+        <div class="ticket-total-row" id="ticket-billete-row" style="display:none;color:var(--text-muted)">
+          <span>Billete</span><span id="ticket-billete-val">—</span>
+        </div>
+        <div class="ticket-total-row" id="ticket-vuelto-row" style="display:none;color:var(--green)">
+          <span>Vuelto</span><span id="ticket-vuelto-val">—</span>
+        </div>
+      </div>
+      <div class="ticket-footer-txt">¡Gracias por su compra! · La Placita</div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="btn btn-secondary" onclick="ventaPage.closePayModal()">Cerrar</button>
+      <button class="btn btn-secondary" onclick="ventaPage.imprimirTicket()">🖨️ Imprimir</button>
+      <button class="btn btn-primary" id="btn-confirmar-pago" onclick="ventaPage.confirmarPago()">✓ Confirmar venta</button>
+    </div>
+  </div>
+</div>
+
+<div id="print-area" style="display:none"></div>
+<div id="toast"></div>
+<script src="/js/ApiClient.js"></script>
+<script src="/js/lock.js"></script>
+<script src="/js/caja_base.js"></script>
+<!-- No se llama CajaBase.check() aquí: no interrumpir ventas con el splash de base del día -->
+<script src="/js/ui.js"></script>
+<script src="/js/venta.js"></script>
+</body></html>

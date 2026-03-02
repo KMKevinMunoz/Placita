@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Placita — Productos</title>
+  <link rel="stylesheet" href="/css/global.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <style>
+    /* ─── Emoji picker ─────────────────────────────────────── */
+    .emoji-preview { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .emoji-big { font-size:40px; line-height:1; }
+    .emoji-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:4px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; max-height:160px; overflow-y:auto; }
+    .emoji-opt { font-size:22px; cursor:pointer; text-align:center; padding:4px; border-radius:6px; transition:var(--transition); line-height:1.4; }
+    .emoji-opt:hover { background:var(--card-hover); transform:scale(1.2); }
+    .emoji-opt.selected { background:var(--green-bg); outline:2px solid var(--green); }
+    .emoji-custom-input { width:100%; margin-top:8px; font-size:20px; text-align:center; }
+
+    /* ─── Photo uploader ────────────────────────────────────── */
+    .photo-section { margin-bottom:18px; }
+    .photo-tabs { display:flex; gap:4px; background:var(--card); border-radius:var(--radius-sm); padding:4px; margin-bottom:12px; border:1px solid var(--border); }
+    .photo-tab { flex:1; padding:7px 6px; border-radius:6px; border:none; background:transparent; color:var(--text-muted); cursor:pointer; font-size:12px; font-weight:600; font-family:var(--sans); transition:var(--transition); text-align:center; }
+    .photo-tab.active { background:var(--surface); color:var(--green); box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+    .photo-panel { display:none; }
+    .photo-panel.active { display:block; }
+
+    /* Drop zone */
+    .drop-zone { border:2px dashed var(--border); border-radius:var(--radius); padding:28px 16px; text-align:center; cursor:pointer; transition:var(--transition); background:var(--card); position:relative; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color:var(--green); background:var(--green-bg); }
+    .drop-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .drop-zone-icon { font-size:36px; margin-bottom:8px; }
+    .drop-zone-text { font-size:13px; color:var(--text-muted); font-weight:500; }
+    .drop-zone-sub  { font-size:11px; color:var(--text-muted); margin-top:4px; }
+
+    /* Paste zone */
+    .paste-zone { border:2px dashed var(--border); border-radius:var(--radius); padding:20px 16px; text-align:center; cursor:pointer; transition:var(--transition); background:var(--card); outline:none; }
+    .paste-zone:focus, .paste-zone.active-paste { border-color:var(--green); background:var(--green-bg); }
+    .paste-zone-icon { font-size:32px; margin-bottom:8px; }
+
+    /* URL input */
+    .url-input-group { display:flex; gap:8px; align-items:flex-end; }
+    .url-input-group input { flex:1; }
+    .url-input-group button { flex-shrink:0; white-space:nowrap; }
+
+    /* Preview */
+    .photo-preview-wrap { margin-top:10px; display:none; position:relative; }
+    .photo-preview-wrap.has-photo { display:block; }
+    .photo-preview { width:100%; height:160px; object-fit:contain; border-radius:var(--radius-sm); border:1.5px solid var(--border); background:var(--card); }
+    .photo-remove { position:absolute; top:6px; right:6px; background:var(--red); color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; }
+
+    /* Thumb in table */
+    .product-thumb { width:36px; height:36px; border-radius:8px; object-fit:cover; border:1px solid var(--border); background:var(--card); display:block; }
+    .product-thumb-emoji { font-size:28px; line-height:1; text-align:center; width:36px; display:block; }
+
+    @media(max-width:768px){
+      .emoji-grid { grid-template-columns:repeat(6,1fr); }
+      .photo-tab { font-size:11px; padding:6px 4px; }
+      .url-input-group { flex-direction:column; }
+      .url-input-group button { width:100%; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <button id="sidebar-close" class="sidebar-close" onclick="document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('visible');document.body.style.overflow=''">✕</button>
+    <div class="sidebar-logo"><h2>🌿Placita</h2><h1>Frutos de Mi Campo</h1><h2>🐮🍉🌿🧺</h2></div>
+    <nav>
+      <div class="nav-section">Ventas</div>
+      <a class="nav-item" href="/pages/venta.html"><span class="icon">🛒</span> Registrar venta</a>
+      <a class="nav-item" href="/pages/recibos.html"><span class="icon">🧾</span> Recibos</a>
+      <div class="nav-section">Gestión</div>
+      <a class="nav-item active" href="/pages/productos.html"><span class="icon">📦</span> Productos</a>
+      <a class="nav-item" href="/pages/ingresos.html"><span class="icon">📥</span> Ingresos</a>
+      <a class="nav-item" href="/pages/prestamos.html"><span class="icon">🤝</span> Préstamos</a>
+      <a class="nav-item" href="/pages/lista.html"><span class="icon">📝</span> Lista de pedidos</a>
+      <a class="nav-item" href="/pages/pesas.html"><span class="icon">⚖️</span> Pesa USB</a>
+      <div class="nav-section">Reportes</div>
+      <a class="nav-item" href="/pages/contabilidad.html"><span class="icon">📊</span> Contabilidad</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info"><div class="user-avatar" id="user-avatar">?</div><div class="user-name" id="user-name">...</div></div>
+      <button class="btn-logout" onclick="api.logout()">Cerrar sesión</button>
+    </div>
+  </div>
+  <div id="sidebar-overlay"></div>
+  <div id="main-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <button id="menu-toggle" aria-label="Menú">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div><h2>Productos</h2><p>Gestiona catálogo, precios y organización. Arrastra ⠿ para ordenar.</p></div>
+      </div>
+      <button class="btn btn-primary" onclick="productosPage.openModal()">+ Nuevo producto</button>
+    </div>
+    <div class="page-body">
+      <div class="dept-header verduras"><span style="font-size:24px">🥦</span><h3>Verduras y Granos</h3></div>
+      <div class="table-wrap" style="margin-bottom:32px">
+        <table>
+          <thead><tr><th>⠿</th><th>Foto</th><th>Nombre</th><th>Categoría</th><th>Unidad</th><th>Precio</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-verduras"></tbody>
+        </table>
+      </div>
+      <div class="dept-header carniceria"><span style="font-size:24px">🥩</span><h3>Carnicería</h3></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>⠿</th><th>Foto</th><th>Nombre</th><th>Categoría</th><th>Unidad</th><th>Precio</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-carniceria"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal producto ─────────────────────────────────────── -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal" style="width:520px;max-height:92vh;overflow-y:auto;">
+    <h3 id="modal-title">Nuevo producto</h3>
+
+    <!-- FOTO DEL PRODUCTO -->
+    <div class="photo-section">
+      <label>Foto del producto <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></label>
+
+      <div class="photo-tabs">
+        <button class="photo-tab active" onclick="productosPage.switchPhotoTab('device',this)">📷 Cámara / Galería</button>
+        <button class="photo-tab" onclick="productosPage.switchPhotoTab('paste',this)">📋 Pegar</button>
+        <button class="photo-tab" onclick="productosPage.switchPhotoTab('url',this)">🔗 URL</button>
+      </div>
+
+      <!-- Pestaña: subir desde dispositivo -->
+      <div class="photo-panel active" id="panel-device">
+        <div class="drop-zone" id="drop-zone"
+             ondragover="productosPage.onDragOver(event)"
+             ondragleave="productosPage.onDragLeave(event)"
+             ondrop="productosPage.onDrop(event)">
+          <input type="file" id="file-input" accept="image/*" capture="environment"
+                 onchange="productosPage.onFileSelected(event)" />
+          <div class="drop-zone-icon">📸</div>
+          <div class="drop-zone-text">Toca aquí para abrir cámara o galería</div>
+          <div class="drop-zone-sub">En computadora puedes arrastrar la imagen aquí • JPG, PNG, WEBP</div>
+        </div>
+      </div>
+
+      <!-- Pestaña: pegar desde portapapeles -->
+      <div class="photo-panel" id="panel-paste">
+        <div class="paste-zone" id="paste-zone" tabindex="0"
+             onclick="productosPage.focusPasteZone()"
+             onpaste="productosPage.onPaste(event)"
+             onfocus="this.classList.add('active-paste')"
+             onblur="this.classList.remove('active-paste')">
+          <div class="paste-zone-icon">📋</div>
+          <div style="font-size:13px;color:var(--text-muted);font-weight:500">Toca aquí y luego pega una imagen</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+            Copia cualquier imagen de internet → <strong>Ctrl+V</strong> o <strong>Cmd+V</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pestaña: URL de internet -->
+      <div class="photo-panel" id="panel-url">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">
+          Copia la URL de una imagen de Google, Amazon, o cualquier página web
+        </div>
+        <div class="url-input-group">
+          <input type="url" id="modal-image-url" placeholder="https://ejemplo.com/imagen.jpg"
+                 oninput="productosPage.onUrlInput(this.value)" />
+          <button class="btn btn-secondary btn-sm" onclick="productosPage.loadImageFromUrl()">Cargar</button>
+        </div>
+      </div>
+
+      <!-- Vista previa de la foto -->
+      <div class="photo-preview-wrap" id="photo-preview-wrap">
+        <img id="photo-preview-img" class="photo-preview" src="" alt="Vista previa" />
+        <button class="photo-remove" onclick="productosPage.removePhoto()" title="Quitar foto">✕</button>
+      </div>
+    </div>
+
+    <!-- EMOJI (alternativa si no hay foto) -->
+    <div class="form-group" id="emoji-section">
+      <label>Emoji del producto <span style="font-weight:400;color:var(--text-muted)">(si no hay foto)</span></label>
+      <div class="emoji-preview">
+        <span class="emoji-big" id="emoji-preview-big">📦</span>
+        <span style="font-size:13px;color:var(--text-muted)">Toca un emoji de la grilla o escribe uno abajo</span>
+      </div>
+      <div class="emoji-grid" id="emoji-grid"></div>
+      <input type="text" class="emoji-custom-input" id="modal-emoji" placeholder="O escribe tu emoji aquí..." maxlength="4" oninput="productosPage.onEmojiInput(this.value)" />
+    </div>
+
+    <div class="form-group"><label>Nombre *</label><input type="text" id="modal-name" placeholder="Ej: Tomate, Lomo, Frijoles..." /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Precio *</label><input type="number" id="modal-price" placeholder="0" step="0.01" min="0" /></div>
+      <div class="form-group"><label>Unidad</label>
+        <select id="modal-unit">
+          <option value="kg">Kg</option><option value="lb">Lb</option>
+          <option value="unidad">Unidad</option><option value="manojos">Manojos</option>
+          <option value="bolsa">Bolsa</option><option value="caja">Caja</option><option value="g">Gramos</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Categoría</label><input type="text" id="modal-category" placeholder="Ej: Verduras, Carnes frías, Granos..." /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Departamento</label>
+        <select id="modal-dept"><option value="verduras_granos">🥦 Verduras y Granos</option><option value="carniceria">🥩 Carnicería</option></select>
+      </div>
+      <div class="form-group"><label>Estado</label>
+        <select id="modal-active"><option value="true">Activo</option><option value="false">Inactivo</option></select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:4px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="modal-sold-by-weight" style="width:16px;height:16px;accent-color:var(--green)" />
+        <span>⚖️ Se vende por peso (usa la pesa)</span>
+      </label>
+    </div>
+    <div id="modal-error" class="msg-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="productosPage.closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-product" onclick="productosPage.saveProduct()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/js/ApiClient.js"></script>
+<script src="/js/lock.js"></script>
+<script src="/js/caja_base.js"></script>
+<script>document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>CajaBase.check(),700));</script>
+<script src="/js/ui.js"></script>
+<script src="/js/productos.js"></script>
+</body></html>

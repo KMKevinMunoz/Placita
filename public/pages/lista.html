@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Placita — Lista de Pedidos</title>
+  <link rel="stylesheet" href="/css/global.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <style>
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    @media(max-width:700px){ .two-col { grid-template-columns:1fr; } }
+
+    .lista-panel { background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius); padding:24px; display:flex; flex-direction:column; gap:14px; min-height:420px; }
+    .lista-panel h3 { font-family:var(--serif); font-size:18px; font-weight:700; margin:0; }
+    .lista-panel .panel-sub { font-size:12px; color:var(--text-muted); margin-top:-8px; }
+
+    /* Input rápido */
+    .quick-add { display:flex; gap:8px; }
+    .quick-add input { flex:1; }
+
+    /* Items de la lista */
+    .lista-items { display:flex; flex-direction:column; gap:6px; min-height:60px; }
+    .lista-item { display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:13px 14px; transition:var(--transition); }
+    .lista-item:hover { border-color:var(--green-light); }
+    .lista-item.done { opacity:0.45; }
+    .lista-item.done .item-text { text-decoration:line-through; color:var(--text-muted); }
+    .item-check { width:18px; height:18px; cursor:pointer; accent-color:var(--green); flex-shrink:0; }
+    .item-text  { flex:1; font-size:15px; }
+    .item-tag   { font-size:10px; font-weight:700; border-radius:99px; padding:2px 8px; white-space:nowrap; }
+    .tag-falta  { background:#FEF3C7; color:#92400E; }
+    .tag-pedido { background:#EDE9FE; color:#5B21B6; }
+    .item-del   { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; }
+    .item-del:hover { background:var(--red-bg); color:var(--red); }
+
+    /* Selector de tipo */
+    .type-tabs { display:flex; gap:6px; margin-bottom:4px; }
+    .type-tab  { flex:1; padding:7px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:12px; font-weight:700; cursor:pointer; background:var(--surface); color:var(--text-muted); transition:var(--transition); }
+    .type-tab.sel-falta  { border-color:#D97706; background:#FEF3C7; color:#92400E; }
+    .type-tab.sel-pedido { border-color:#7C3AED; background:#EDE9FE; color:#5B21B6; }
+
+    /* Contador badge */
+    .panel-header { display:flex; justify-content:space-between; align-items:flex-start; }
+    .count-badge  { font-size:11px; font-weight:700; background:var(--green); color:white; border-radius:99px; padding:2px 10px; }
+
+    .empty-lista { text-align:center; padding:20px; color:var(--text-muted); font-size:13px; }
+
+    /* Acciones */
+    .panel-actions { display:flex; gap:8px; flex-wrap:wrap; }
+
+    /* Hint de productos */
+    .product-hints { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+    .product-hint  { background:var(--surface); border:1px solid var(--border); border-radius:99px; padding:4px 12px; font-size:12px; cursor:pointer; transition:var(--transition); }
+    .product-hint:hover { border-color:var(--green); background:var(--green-bg); }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div class="sidebar-logo"><h2>🌿Placita</h2><h1>Frutos de Mi Campo</h1><h2>🐮🍉🌿🧺</h2></div>
+    <nav>
+      <div class="nav-section">Ventas</div>
+      <a class="nav-item" href="/pages/venta.html"><span class="icon">🛒</span> Registrar venta</a>
+      <a class="nav-item" href="/pages/recibos.html"><span class="icon">🧾</span> Recibos</a>
+      <div class="nav-section">Gestión</div>
+      <a class="nav-item" href="/pages/productos.html"><span class="icon">📦</span> Productos</a>
+      <a class="nav-item" href="/pages/ingresos.html"><span class="icon">📥</span> Ingresos</a>
+      <a class="nav-item" href="/pages/prestamos.html"><span class="icon">🤝</span> Préstamos</a>
+      <a class="nav-item active" href="/pages/lista.html"><span class="icon">📝</span> Lista de pedidos</a>
+      <a class="nav-item" href="/pages/pesas.html"><span class="icon">⚖️</span> Pesa USB</a>
+      <div class="nav-section">Reportes</div>
+      <a class="nav-item" href="/pages/contabilidad.html"><span class="icon">📊</span> Contabilidad</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info"><div class="user-avatar" id="user-avatar">?</div><div class="user-name" id="user-name">...</div></div>
+      <button class="btn-logout" onclick="api.logout()">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div id="main-content">
+    <div class="page-header">
+      <div><h2>Lista de Pedidos</h2><p>Anota lo que falta y lo que están pidiendo los clientes</p></div>
+      <button class="btn btn-secondary btn-sm" onclick="listaPage.exportar()">📋 Copiar lista</button>
+    </div>
+    <div class="page-body">
+
+      <div class="two-col">
+
+        <!-- ── Panel: Productos que FALTAN ── -->
+        <div class="lista-panel">
+          <div class="panel-header">
+            <div>
+              <h3>🚨 Productos que faltan</h3>
+              <p class="panel-sub">Lo que se acabó o está por acabarse</p>
+            </div>
+            <span class="count-badge" id="count-falta">0</span>
+          </div>
+
+          <!-- Hints de productos registrados -->
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:5px">Toca un producto para agregar rápido:</div>
+            <div class="product-hints" id="hints-falta"></div>
+          </div>
+
+          <div class="quick-add">
+            <input type="text" id="input-falta" placeholder="Ej: Tomates, Pechuga..." maxlength="80" />
+            <button class="btn btn-primary" onclick="listaPage.add('falta')">+ Agregar</button>
+          </div>
+
+          <div class="lista-items" id="list-falta">
+            <div class="empty-lista">Sin productos anotados aún</div>
+          </div>
+
+          <div class="panel-actions">
+            <button class="btn btn-secondary btn-sm" onclick="toggleAcciones('acc-falta')">⚙️ Acciones ▾</button>
+            <div id="acc-falta" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;display:none;flex-direction:column;gap:6px">
+              <button class="btn btn-secondary btn-sm" onclick="listaPage.clearDone('falta')">🧹 Quitar completados</button>
+              <button class="btn btn-secondary btn-sm" onclick="listaPage.clearAll('falta')">🗑️ Limpiar todo</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Panel: Productos que ESTÁN PIDIENDO ── -->
+        <div class="lista-panel">
+          <div class="panel-header">
+            <div>
+              <h3>💬 Clientes pidiendo</h3>
+              <p class="panel-sub">Productos que preguntan y no tenemos</p>
+            </div>
+            <span class="count-badge" id="count-pedido" style="background:#7C3AED">0</span>
+          </div>
+
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:5px">Toca un producto para agregar rápido:</div>
+            <div class="product-hints" id="hints-pedido"></div>
+          </div>
+
+          <div class="quick-add">
+            <input type="text" id="input-pedido" placeholder="Ej: Ahuyama, Costilla ahumada..." maxlength="80" />
+            <button class="btn btn-primary" style="background:#7C3AED;border-color:#7C3AED" onclick="listaPage.add('pedido')">+ Agregar</button>
+          </div>
+
+          <div class="lista-items" id="list-pedido">
+            <div class="empty-lista">Sin productos pedidos aún</div>
+          </div>
+
+          <div class="panel-actions">
+            <button class="btn btn-secondary btn-sm" onclick="toggleAcciones('acc-pedido')">⚙️ Acciones ▾</button>
+            <div id="acc-pedido" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;flex-direction:column;gap:6px">
+              <button class="btn btn-secondary btn-sm" onclick="listaPage.clearDone('pedido')">🧹 Quitar completados</button>
+              <button class="btn btn-secondary btn-sm" onclick="listaPage.clearAll('pedido')">🗑️ Limpiar todo</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Historial de lo que pidieron hoy -->
+      <div style="margin-top:20px">
+        <div class="section-title">📅 Resumen rápido del día</div>
+        <div id="resumen-dia" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-size:13px;color:var(--text-muted)">
+          Cargando...
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script>
+function toggleAcciones(id) {
+  const el = document.getElementById(id);
+  const visible = el.style.display === 'flex';
+  document.querySelectorAll('.panel-actions > div[id^="acc-"]').forEach(d => d.style.display = 'none');
+  el.style.display = visible ? 'none' : 'flex';
+}
+</script>
+<script src="/js/ApiClient.js"></script>
+<script src="/js/lock.js"></script>
+<script src="/js/caja_base.js"></script>
+<script>document.addEventListener("DOMContentLoaded",()=>setTimeout(()=>CajaBase.check(),700));</script>
+<script src="/js/lista.js"></script>
+</body>
+</html>
